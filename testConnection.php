@@ -2,7 +2,7 @@
 require "../database/database.php"; 
 $pdo = Database::connect();
 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-$sql = "SELECT * FROM iss_persons where id = ?";
+$sql = "SELECT * FROM iss_persons where id = ? LIMIT 1";
 $q = $pdo->prepare($sql);
 $id = 1;
 $q->execute(array($id));
