@@ -23,11 +23,12 @@ if (!isset($_SESSION["iss_person_id"])) { // If "user" not set, redirect to logi
             rows.forEach(function(row) {
                 var closeDate = row.cells[3].textContent.trim(); // Get the Close Date (4th column)
 
-                if (notCompleted && closeDate === 'null') {
+                if ((notCompleted && closeDate === 'Open') || (completed && closeDate !== 'Open' && closeDate !== '')) 
+                {
                     row.style.display = ''; // Show the row
-                } else if (completed && closeDate !== 'null') {
-                    row.style.display = ''; // Show the row
-                } else {
+                } 
+                else 
+                {
                     row.style.display = 'none'; // Hide the row
                 }
             });
@@ -126,12 +127,12 @@ if (!isset($_SESSION["iss_person_id"])) { // If "user" not set, redirect to logi
                     echo '<tr>';
                     // Issue ID with a link
                     echo '<td><a href="iss_issue_description.php?id=' . $row['id'] . '">' . ($row['id'] ?? 'null') . '</a></td>';
-                    echo '<td>' . (!empty($row['short_description']) ? $row['short_description'] : 'null') . '</td>';
+                    echo '<td>' . (!empty($row['short_description']) ? $row['short_description'] : '') . '</td>';
                     echo '<td>' . (!empty($row['open_date']) ? $row['open_date'] : 'null') . '</td>';
-                    echo '<td>' . ($row['close_date'] != '0000-00-00' ? $row['close_date'] : 'null') . '</td>';
-                    echo '<td>' . (!empty($row['priority']) ? $row['priority'] : 'null') . '</td>';
-                    echo '<td>' . (!empty($row['org']) ? $row['org'] : 'null') . '</td>';
-                    echo '<td>' . (!empty($row['project']) ? $row['project'] : 'null') . '</td>';
+                    echo '<td>' . ($row['close_date'] != '0000-00-00' ? $row['close_date'] : 'Open') . '</td>';
+                    echo '<td>' . (!empty($row['priority']) ? $row['priority'] : '') . '</td>';
+                    echo '<td>' . (!empty($row['org']) ? $row['org'] : '') . '</td>';
+                    echo '<td>' . (!empty($row['project']) ? $row['project'] : '') . '</td>';
                     echo '<td>';
                     if ($row['per_id'] >= 0) {
                         echo '<a href="iss_per.php?id=' . $row['per_id'] . '">' . $row['per_id'] . '</a>';

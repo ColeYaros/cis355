@@ -91,7 +91,7 @@
                 <tr><th>Short Description</th><td><?php echo htmlspecialchars($issue['short_description']) ?? 'null'; ?></td></tr>
                 <tr><th>Long Description</th><td><?php echo htmlspecialchars($issue['long_description']) ?? 'null'; ?></td></tr>
                 <tr><th>Open Date</th><td><?php echo htmlspecialchars($issue['open_date']) ?? 'null'; ?></td></tr>
-                <tr><th>Close Date</th><td><?php echo ($issue['close_date'] != '0000-00-00' ? htmlspecialchars($issue['close_date']) : 'null') ?? 'null'; ?></td></tr>
+                <tr><th>Close Date</th><td><?php echo ($issue['close_date'] != '0000-00-00' ? htmlspecialchars($issue['close_date']) : 'Open') ?? 'null'; ?></td></tr>
                 <tr><th>Priority</th><td><?php echo htmlspecialchars($issue['priority']) ?? 'null'; ?></td></tr>
                 <tr><th>Org.</th><td><?php echo htmlspecialchars($issue['org']) ?? 'null'; ?></td></tr>
                 <tr><th>Project</th><td><?php echo htmlspecialchars($issue['project']) ?? 'null'; ?></td></tr>
