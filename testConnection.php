@@ -1,5 +1,5 @@
 <?php 
-require "../database/database.php"; 
+require "database.php"; 
 $pdo = Database::connect();
 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 $sql = "SELECT * FROM iss_persons where id = ? LIMIT 1";

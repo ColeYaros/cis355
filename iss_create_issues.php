@@ -28,10 +28,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $error = "Short and Long description and Priority are needed!";
     } else {
         // Insert into database
-        $sql = "INSERT INTO iss_issues (short_description, long_description, open_date, priority, org, project, per_id) 
-                VALUES (?, ?, ?, ?, ?, ?, ?)";
+        $sql = "INSERT INTO iss_issues (short_description, long_description, open_date, close_date, priority, org, project, per_id) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
         $stmt = $pdo->prepare($sql);
-        $stmt->execute([$short_description, $long_description, $open_date, $priority, $org, $project, $user_id]);
+        $stmt->execute([$short_description, $long_description, $open_date, '0000-00-00', $priority, $org, $project, $user_id]);
 
         // Redirect to issues page after creation
         header("Location: iss_issues.php");

@@ -2,6 +2,10 @@
 session_start();
 include '../database/database.php';
 
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
 $pdo = Database::connect();
 
 if (!isset($_SESSION["iss_person_id"])) {
@@ -38,10 +42,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if (empty($first_name) || empty($last_name) || empty($email) || empty($mobile)) {
         $error = "First name, last name, email, and phone are required fields.";
     } elseif (!preg_match("/^[0-9]{3}-[0-9]{3}-[0-9]{4}$/", $mobile)) {
-        // Validate phone number format
         $error = "Phone number must be in the format XXX-XXX-XXXX.";
     } elseif (!empty($new_password) && $new_password !== $confirm_password) {
-        // Check if new passwords match
         $error = "New password and confirm password do not match.";
     } else {
         // Check if email has changed and is already taken
@@ -55,15 +57,26 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $error = "The email address is already associated with another account.";
             }
         }
-        
+
         if (empty($error)) {
-            // Password update logic (if applicable)
+            // Password update logic
             if (!empty($new_password)) {
-                // Hash the new password
-                $hashed_password = md5($new_password);
-                $sql = "UPDATE iss_persons SET fname=?, lname=?, email=?, mobile=?, pwd_hash=? WHERE id=?";
-                $stmt = $pdo->prepare($sql);
-                $stmt->execute([$first_name, $last_name, $email, $mobile, $hashed_password, $user_id]);
+                // Verify the current password
+                $stored_salt = $user['pwd_salt'];
+                $stored_hash = $user['pwd_hash'];
+                $current_hashed = md5($current_password . $stored_salt);
+
+                if ($current_hashed !== $stored_hash) {
+                    $error = "Current password is incorrect.";
+                } else {
+                    // Generate a new salt and hash the new password
+                    $salt = bin2hex(random_bytes(4)); // 8-byte random salt
+                    $new_hashed_password = md5($new_password . $salt);
+
+                    $sql = "UPDATE iss_persons SET fname=?, lname=?, email=?, mobile=?, pwd_hash=?, pwd_salt=? WHERE id=?";
+                    $stmt = $pdo->prepare($sql);
+                    $stmt->execute([$first_name, $last_name, $email, $mobile, $new_hashed_password, $salt, $user_id]);
+                }
             } else {
                 // Update user info without changing password
                 $sql = "UPDATE iss_persons SET fname=?, lname=?, email=?, mobile=? WHERE id=?";
@@ -71,8 +84,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $stmt->execute([$first_name, $last_name, $email, $mobile, $user_id]);
             }
 
-            header("Location: iss_per.php?id=" . $user_id);
-            exit;
+            if (empty($error)) {
+                header("Location: iss_per.php?id=" . $user_id);
+                exit;
+            }
         }
     }
 }

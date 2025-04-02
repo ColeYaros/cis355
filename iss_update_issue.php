@@ -2,6 +2,10 @@
 session_start();
 include '../database/database.php';
 
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
 $pdo = Database::connect();
 
 if (!isset($_SESSION["iss_person_id"])) {
@@ -34,10 +38,12 @@ if ($issue_id) {
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $short_description = $_POST['short_description'] ?? '';
     $long_description = $_POST['long_description'] ?? '';
-    $close_date = $_POST['close_date'] ?? null;
+    $close_date = $_POST['close_date'] ?? '0000-00-00';
     $priority = $_POST['priority'] ?? '';
     $org = $_POST['org'] ?? '';
     $project = $_POST['project'] ?? '';
+
+    $close_date = !empty($_POST['close_date']) ? $_POST['close_date'] : '0000-00-00';
 
     if (empty($short_description) || empty($priority)) {
         $error = "Short description, priority, organization, and project are required fields.";

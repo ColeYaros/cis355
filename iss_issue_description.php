@@ -44,6 +44,38 @@
     $user = $admin_check_stmt->fetch(PDO::FETCH_ASSOC);
     $is_admin = $user['admin'] == 'yes';
 
+    // Handle Issue Deletion (Only Admins)
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["delete_id"]) && $is_admin) {
+    $delete_id = $_POST["delete_id"];
+    
+    try {
+        $pdo = Database::connect();
+        $pdo->beginTransaction(); // Start transaction
+        
+        // Delete all related comments first
+        $delete_comments_sql = "DELETE FROM iss_comments WHERE iss_id = ?";
+        $stmt = $pdo->prepare($delete_comments_sql);
+        $stmt->execute([$delete_id]);
+
+        // Delete the issue itself
+        $delete_issue_sql = "DELETE FROM iss_issues WHERE id = ?";
+        $stmt = $pdo->prepare($delete_issue_sql);
+        $stmt->execute([$delete_id]);
+
+        $pdo->commit(); // Commit transaction
+        Database::disconnect();
+
+        // Redirect back to issues list
+        header("Location: iss_issues.php");
+        exit;
+    } catch (Exception $e) {
+        $pdo->rollBack(); // Rollback transaction if something fails
+        Database::disconnect();
+        echo "<div class='alert alert-danger'>Error deleting issue: " . htmlspecialchars($e->getMessage()) . "</div>";
+    }
+}
+
+
     Database::disconnect();
 ?>
 
@@ -136,7 +168,8 @@
     <div class='alert alert-danger'>Issue not found.</div>
 <?php endif; ?>
 </div>
-
+<br></br>
+<br></br>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

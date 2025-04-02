@@ -1,42 +1,44 @@
 <?php
 // Start or resume session, and create: $_SESSION[] array
-session_start(); 
+session_start();
 
 require '../database/database.php';
 
-if ( !empty($_POST)) { // if $_POST filled then process the form
+if (!empty($_POST)) { // If $_POST is filled, process the form
 
-	// initialize $_POST variables
-	$username = $_POST['username']; // username is email address
-	$password = $_POST['password'];
-	$passwordhash = MD5($password);
-	// echo $password . " " . $passwordhash; exit();
-	// robot 87b7cb79481f317bde90c116cf36084b
-		
-	// verify the username/password
-	$pdo = Database::connect();
-$pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-$sql = "SELECT * FROM iss_persons WHERE email = ? AND pwd_hash = ? LIMIT 1";
-$q = $pdo->prepare($sql);
-$q->execute(array($username, $passwordhash));
-$data = $q->fetch(PDO::FETCH_ASSOC);
+    // Initialize $_POST variables
+    $username = $_POST['username']; // username is email address
+    $password = $_POST['password'];
 
-// After processing the query, close the connection
-$pdo = null; // This will close the connection
+    // Connect to the database
+    $pdo = Database::connect();
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-if ($data) { 
-    // successful login code
-    $_SESSION['iss_person_id'] = $data['id'];
-    $sessionid = $data['id'];
-    header("Location: iss_issues.php");
-    exit();
-} else {
-    // login error code
+    // Retrieve the salt for the given username
+    $sql = "SELECT id, pwd_hash, pwd_salt FROM iss_persons WHERE email = ? LIMIT 1";
+    $q = $pdo->prepare($sql);
+    $q->execute(array($username));
+    $data = $q->fetch(PDO::FETCH_ASSOC);
+
+    if ($data) {
+        $salt = $data['pwd_salt']; // Retrieve the salt from the database
+        $passwordhash = md5($password . $salt); // Append salt and hash
+
+        // Verify if the hashed password matches the stored hash
+        if ($passwordhash === $data['pwd_hash']) {
+            // Successful login
+            $_SESSION['iss_person_id'] = $data['id'];
+            header("Location: iss_issues.php");
+            exit();
+        }
+    }
+
+    // If login fails, redirect to error page
     header("Location: login_error.html");
+    exit();
 }
-} 
-// if $_POST NOT filled then display login form, below.
 ?>
+
 
 <!DOCTYPE html>
 <html lang="en">

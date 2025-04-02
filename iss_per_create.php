@@ -1,94 +1,97 @@
 <?php 
 session_start();
-	
 require_once '../database/database.php';
 
-if ( !empty($_POST)) { 
-	$fnameError = null;
-	$lnameError = null;
-	$emailError = null;
-	$mobileError = null;
-	$passwordError = null;
-	$titleError = null;
-	$pictureError = null;
-	
-	$fname = $_POST['fname'];
-	$lname = $_POST['lname'];
-	$mobile = $_POST['mobile'];
-	$email = $_POST['email'];
-	$password = $_POST['password'];
-	$passwordhash = MD5($password);
-	$valid = true;
-	if (empty($fname)) {
-		$fnameError = 'Please enter First Name';
-		$valid = false;
-	}
-	if (empty($lname)) {
-		$lnameError = 'Please enter Last Name';
-		$valid = false;
-	}
-	if (empty($email)) {
-		$emailError = 'Please enter valid Email Address (REQUIRED)';
-		$valid = false;
-	} else if ( !filter_var($email,FILTER_VALIDATE_EMAIL) ) {
-		$emailError = 'Please enter a valid Email Address';
-		$valid = false;
-	}
+if (!empty($_POST)) { 
+    $fnameError = $lnameError = $emailError = $mobileError = $passwordError = $confirmPasswordError = null;
 
-	$pdo = Database::connect();
+    $fname = $_POST['fname'];
+    $lname = $_POST['lname'];
+    $mobile = $_POST['mobile'];
+    $email = $_POST['email'];
+    $password = $_POST['password'];
+    $confirmPassword = $_POST['confirm_password'];
+    $valid = true;
+
+    if (empty($fname)) {
+        $fnameError = 'Please enter First Name';
+        $valid = false;
+    }
+    if (empty($lname)) {
+        $lnameError = 'Please enter Last Name';
+        $valid = false;
+    }
+    if (empty($email)) {
+        $emailError = 'Please enter valid Email Address (REQUIRED)';
+        $valid = false;
+    } else if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $emailError = 'Please enter a valid Email Address';
+        $valid = false;
+    }
+
+    $pdo = Database::connect();
     $sql = "SELECT COUNT(*) FROM iss_persons WHERE email = ?";
     $q = $pdo->prepare($sql);
     $q->execute([$email]);
     $count = $q->fetchColumn();
+    Database::disconnect();
 
     if ($count > 0) {
         $emailError = 'Email has already been registered!';
         $valid = false;
     }
-    Database::disconnect();
-	
-	if (strcmp(strtolower($email),$email)!=0) {
-		$emailError = 'email address can contain only lower case letters';
-		$valid = false;
-	}
-	
-	if (empty($mobile)) {
-		$mobileError = 'Please enter Mobile Number (or "none")';
-		$valid = false;
-	}
-	if(!preg_match("/^[0-9]{3}-[0-9]{3}-[0-9]{4}$/", $mobile)) {
-		$mobileError = 'Please write Mobile Number in form 000-000-0000';
-		$valid = false;
-	}
-	if (empty($password)) {
-		$passwordError = 'Please enter valid Password';
-		$valid = false;
-	}
-	if ($valid) 
-	{
-		$pdo = Database::connect();
-		
-		$pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-		$sql = "INSERT INTO iss_persons (fname,lname,mobile,email,pwd_hash) values(?, ?, ?, ?, ?)";
-		$q = $pdo->prepare($sql);
-		$q->execute(array($fname,$lname,$mobile,$email,$passwordhash));
+    
+    if (strcmp(strtolower($email), $email) != 0) {
+        $emailError = 'Email address can contain only lower case letters';
+        $valid = false;
+    }
 
-		$pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-		$sql = "SELECT * FROM iss_persons WHERE email = ? LIMIT 1";
+    if (empty($mobile)) {
+        $mobileError = 'Please enter Mobile Number (or "none")';
+        $valid = false;
+    }
+    if (!preg_match("/^[0-9]{3}-[0-9]{3}-[0-9]{4}$/", $mobile)) {
+        $mobileError = 'Please write Mobile Number in form 000-000-0000';
+        $valid = false;
+    }
+    if (empty($password)) {
+        $passwordError = 'Please enter a valid Password';
+        $valid = false;
+    }
+    if ($password !== $confirmPassword) {
+        $confirmPasswordError = 'Passwords do not match';
+        $valid = false;
+    }
+
+    if ($valid) {
+        // Generate a short random salt (8 characters)
+        $salt = bin2hex(random_bytes(4)); // 4 bytes = 8 hex characters
+
+        // Append salt to password and hash using MD5
+        $passwordhash = md5($password . $salt);
+
+        $pdo = Database::connect();
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+        // Insert user data into database, including salt and admin status
+        $sql = "INSERT INTO iss_persons (fname, lname, mobile, email, pwd_hash, pwd_salt, admin) VALUES (?, ?, ?, ?, ?, ?, ?)";
+        $q = $pdo->prepare($sql);
+        $q->execute([$fname, $lname, $mobile, $email, $passwordhash, $salt, 'no']);
+
+        // Retrieve the newly created user ID
+        $sql = "SELECT id FROM iss_persons WHERE email = ? LIMIT 1";
         $q = $pdo->prepare($sql);
         $q->execute([$email]);
         $data = $q->fetch(PDO::FETCH_ASSOC);
 
-        if ($data && password_verify($password, $data['pwd_hash'])) {
+        if ($data) {
             $_SESSION['iss_person_id'] = $data['id'];
         }
-		$data = $q->fetch(PDO::FETCH_ASSOC);
-		
-		$_SESSION['iss_person_id'] = $data['id'];
-		
-		$var = Database::disconnect();
+
+        Database::disconnect();
         header("Location: iss_issues.php");
-	}
+        exit();
+    }
 }
 ?>
 
@@ -222,14 +225,35 @@ if ( !empty($_POST)) {
             </div>
 
             <div class="control-group <?php echo !empty($passwordError)?'error':'';?>">
-                <label class="control-label">Password</label>
-                <div class="controls">
-                    <input id="password" name="password" type="password" placeholder="Password" value="<?php echo !empty($password)?$password:'';?>">
-                    <?php if (!empty($passwordError)): ?>
-                        <span class="help-inline"><?php echo $passwordError;?></span>
-                    <?php endif; ?>
-                </div>
-            </div>
+    <label class="control-label">Password</label>
+    <div class="controls">
+        <input id="password" name="password" type="password" placeholder="Password" value="<?php echo !empty($password)?$password:'';?>">
+        <?php if (!empty($passwordError)): ?>
+            <span class="help-inline"><?php echo $passwordError;?></span>
+        <?php endif; ?>
+    </div>
+</div>
+
+<div class="control-group <?php echo !empty($confirmPasswordError)?'error':'';?>">
+    <label class="control-label">Confirm Password</label>
+    <div class="controls">
+        <input id="confirm_password" name="confirm_password" type="password" placeholder="Confirm Password">
+        <?php if (!empty($confirmPasswordError)): ?>
+            <span class="help-inline"><?php echo $confirmPasswordError;?></span>
+        <?php endif; ?>
+    </div>
+</div>
+
+<script>
+    document.querySelector('form').addEventListener('submit', function(e) {
+        var password = document.getElementById('password').value;
+        var confirmPassword = document.getElementById('confirm_password').value;
+        if (password !== confirmPassword) {
+            e.preventDefault();
+            alert('Passwords do not match!');
+        }
+    });
+</script>
 
             <div class="form-actions">
                 <button type="submit" class="btn btn-success">Confirm</button>
