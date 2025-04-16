@@ -67,6 +67,30 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["resolve_id"])) {
     exit();
 }
 
+// Handle issue reopening
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["reopen_id"])) {
+    $reopen_id = $_POST["reopen_id"];
+    $reopen_date = "0000-00-00";
+
+    // Set close date to 0000-00-00 to reopen
+    $sql = "UPDATE iss_issues SET close_date = ? WHERE id = ?";
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute([$reopen_date, $reopen_id]);
+
+    // Insert a comment saying "This issue has been reopened"
+    $short_comment = "This issue has been reopened";
+    $long_comment = "";
+    $current_date = date("Y-m-d");
+
+    $sql_comment = "INSERT INTO iss_comments (per_id, iss_id, short_comment, long_comment, posted_date) 
+                    VALUES (?, ?, ?, ?, ?)";
+    $stmt_comment = $pdo->prepare($sql_comment);
+    $stmt_comment->execute([$user_id, $reopen_id, $short_comment, $long_comment, $current_date]);
+
+    header("Location: iss_my_issues.php");
+    exit();
+}
+
 // Fetch user's issues
 $sql = "SELECT * FROM iss_issues WHERE per_id = ?";
 $stmt = $pdo->prepare($sql);
@@ -119,36 +143,55 @@ Database::disconnect();
                 <th>Org</th>
                 <th>Project</th>
                 <th>Open Date</th>
+                <th>Close Date</th>
                 <th>Actions</th>
             </tr>
         </thead>
         <tbody>
-            <?php if (!empty($issues)): ?>
-                <?php foreach ($issues as $issue): ?>
-                    <tr>
-                        <td><?= htmlspecialchars($issue['id']) ?></td>
-                        <td><?= htmlspecialchars($issue['short_description']) ?></td>
-                        <td><?= htmlspecialchars($issue['priority']) ?></td>
-                        <td><?= htmlspecialchars($issue['org']) ?></td>
-                        <td><?= htmlspecialchars($issue['project']) ?></td>
-                        <td><?= htmlspecialchars($issue['open_date']) ?></td>
-                        <td>
-                            <a href="iss_update_issue.php?id=<?= $issue['id'] ?>" class="btn btn-warning btn-sm">Update</a>
-                            <form method="POST" style="display:inline-block;">
-                                <input type="hidden" name="delete_id" value="<?= $issue['id'] ?>">
-                                <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure? This will also delete all comments related to this issue.')">Delete</button>
-                            </form>
-                            <form method="POST" style="display:inline-block;">
-                                <input type="hidden" name="resolve_id" value="<?= $issue['id'] ?>">
-                                <button type="submit" class="btn btn-success btn-sm">Resolve</button>
-                            </form>
-                        </td>
-                    </tr>
-                <?php endforeach; ?>
-            <?php else: ?>
-                <tr><td colspan="7" class="text-center">No issues found.</td></tr>
-            <?php endif; ?>
-        </tbody>
+    <?php if (!empty($issues)): ?>
+        <?php foreach ($issues as $issue): ?>
+            <tr>
+                <td><?= htmlspecialchars($issue['id']) ?></td>
+                <td><?= htmlspecialchars($issue['short_description']) ?></td>
+                <td><?= htmlspecialchars($issue['priority']) ?></td>
+                <td><?= htmlspecialchars($issue['org']) ?></td>
+                <td><?= htmlspecialchars($issue['project']) ?></td>
+                <td><?= htmlspecialchars($issue['open_date']) ?></td>
+                <td><?= htmlspecialchars($issue['close_date']) ?></td>
+                <td>
+                    <a href="iss_update_issue.php?id=<?= $issue['id'] ?>" class="btn btn-warning btn-sm">Update</a>
+
+                    <form method="POST" style="display:inline-block;">
+                        <input type="hidden" name="delete_id" value="<?= $issue['id'] ?>">
+                        <button type="submit" class="btn btn-danger btn-sm"
+                            onclick="return confirm('Are you sure? This will also delete all comments related to this issue.')">
+                            Delete
+                        </button>
+                    </form>
+
+                    <?php if ($issue['close_date'] == "0000-00-00" || empty($issue['close_date'])): ?>
+                        <form method="POST" style="display:inline-block;">
+                            <input type="hidden" name="resolve_id" value="<?= $issue['id'] ?>">
+                            <button type="submit" class="btn btn-success btn-sm"
+                                onclick="return confirm('Are you sure you want to resolve this issue?')">
+                                Resolve
+                            </button>
+                        </form>
+                    <?php else: ?>
+                        <form method="POST" style="display:inline-block;">
+                            <input type="hidden" name="reopen_id" value="<?= $issue['id'] ?>">
+                            <button type="submit" class="btn btn-secondary btn-sm"
+                                onclick="return confirm('Reopen this issue?')">
+                                Reopen
+                            </button>
+                        </form>
+                    <?php endif; ?>
+                </td>
+            </tr>
+        <?php endforeach; ?>
+    <?php endif; ?>
+</tbody>
+
     </table>
 </div>
 

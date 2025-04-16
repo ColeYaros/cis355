@@ -28,10 +28,12 @@
 
     // Query to fetch comments for the given issue ID, along with the commenter's first and last name
     $sql = "SELECT c.id AS comment_id, c.short_comment, c.long_comment, c.posted_date, 
-    p.id AS per_id, p.fname, p.lname 
-    FROM iss_comments c
-    JOIN iss_persons p ON c.per_id = p.id
-    WHERE c.iss_id = ?";
+        p.id AS per_id, p.fname, p.lname 
+        FROM iss_comments c
+        JOIN iss_persons p ON c.per_id = p.id
+        WHERE c.iss_id = ?
+        ORDER BY c.id DESC";
+
     $stmt = $pdo->prepare($sql);
     $stmt->execute([$issue_id]);
     $comments = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -147,18 +149,23 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["delete_id"]) && $is_ad
 <br></br>
 <?php if (count($comments) > 0): ?>
     <ul class="list-group">
-        <?php foreach ($comments as $comment): ?>
-            <li class="list-group-item">
-                <strong>
-                    <a href="iss_per.php?id=<?php echo htmlspecialchars($comment['per_id']); ?>" class="text-decoration-none">
-                        <?php echo htmlspecialchars($comment['fname']) . ' ' . htmlspecialchars($comment['lname']); ?>
-                    </a>:
-                </strong>
-                <p><strong>Short Comment:</strong> <?php echo htmlspecialchars($comment['short_comment']); ?></p>
-                <p><strong>Long Comment:</strong> <?php echo htmlspecialchars($comment['long_comment']); ?></p>
-                <p><small>Posted on: <?php echo htmlspecialchars($comment['posted_date']); ?></small></p>
-            </li>
-        <?php endforeach; ?>
+    <?php foreach ($comments as $comment): ?>
+    <li class="list-group-item">
+        <strong>
+            <a href="iss_per.php?id=<?php echo htmlspecialchars($comment['per_id']); ?>" class="text-decoration-none">
+                <?php echo htmlspecialchars($comment['fname']) . ' ' . htmlspecialchars($comment['lname']); ?>
+            </a>:
+        </strong>
+        <p><strong>Short Comment:</strong> <?php echo htmlspecialchars($comment['short_comment']); ?></p>
+        <p><strong>Long Comment:</strong> <?php echo htmlspecialchars($comment['long_comment']); ?></p>
+        <p><small>Posted on: <?php echo htmlspecialchars($comment['posted_date']); ?></small></p>
+        
+        <?php if ($comment['per_id'] == $_SESSION['iss_person_id']): ?>
+            <a href="iss_update_comment.php?id=<?php echo $comment['comment_id']; ?>" class="btn btn-sm btn-secondary">Edit</a>
+        <?php endif; ?>
+    </li>
+<?php endforeach; ?>
+
     </ul>
 <?php else: ?>
     <p>No comments available for this issue.</p>
