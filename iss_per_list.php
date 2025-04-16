@@ -48,6 +48,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $is_admin) {
     }
 }
 
+if (isset($_POST['delete_user_id'])) {
+    $id = $_POST['delete_user_id'];
+
+    // Prevent admin from deleting themselves
+    if ($id == $_SESSION['iss_person_id']) {
+        $_SESSION['delete_error'] = "You cannot delete your own account.";
+    } else {
+        $stmt = $pdo->prepare("DELETE FROM iss_persons WHERE id = :id");
+        $stmt->execute([':id' => $id]);
+    }
+
+    header("Location: iss_per_list.php");
+    exit;
+}
+
 Database::disconnect();
 ?>
 
@@ -110,14 +125,22 @@ Database::disconnect();
                     <td><?= htmlspecialchars($person['email']) ?></td>
                     <?php if ($is_admin): ?>
                         <td>
-                            <form method="POST" style="display:inline-block;">
-                                <input type="hidden" name="toggle_admin_id" value="<?= $person['id'] ?>">
-                                <input type="hidden" name="new_admin_status" value="<?= $person['admin'] === 'yes' ? 'no' : 'yes' ?>">
-                                <button type="submit" class="btn btn-sm <?= $person['admin'] === 'yes' ? 'btn-danger' : 'btn-success' ?>">
-                                    <?= $person['admin'] === 'yes' ? 'Remove Admin' : 'Make Admin' ?>
-                                </button>
-                            </form>
-                        </td>
+    <!-- Admin toggle -->
+    <form method="POST" style="display:inline-block;">
+        <input type="hidden" name="toggle_admin_id" value="<?= $person['id'] ?>">
+        <input type="hidden" name="new_admin_status" value="<?= $person['admin'] === 'yes' ? 'no' : 'yes' ?>">
+        <button type="submit" class="btn btn-sm <?= $person['admin'] === 'yes' ? 'btn-danger' : 'btn-success' ?>">
+            <?= $person['admin'] === 'yes' ? 'Remove Admin' : 'Make Admin' ?>
+        </button>
+    </form>
+
+    <!-- Delete button -->
+    <form method="POST" style="display:inline-block;" onsubmit="return confirm('Are you sure you want to delete this user?');">
+        <input type="hidden" name="delete_user_id" value="<?= $person['id'] ?>">
+        <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+    </form>
+</td>
+
                     <?php endif; ?>
                 </tr>
             <?php endforeach; ?>
