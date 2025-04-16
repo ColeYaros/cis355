@@ -69,15 +69,25 @@ Database::disconnect();
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav">
-                <li class="nav-item"><a class="nav-link" href="iss_issues.php">Issues</a></li>
-                <li class="nav-item"><a class="nav-link" href="iss_my_issues.php">My Issues</a></li>
-                <li class="nav-item"><a class="nav-link" href="iss_create_issues.php">Create Issue</a></li>
-                <li class="nav-item"><a class="nav-link" href="iss_per.php?id=<?php echo $_SESSION['iss_person_id']; ?>">Me</a></li>
+                <li class="nav-item">
+                    <a class="nav-link" href="iss_issues.php">Issues</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="iss_my_issues.php">My Issues</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="iss_create_issues.php">Create Issue</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="iss_per_list.php">Persons</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="iss_per.php?id=<?php echo $_SESSION['iss_person_id']; ?>">Me</a>
+                </li>
             </ul>
         </div>
     </div>
 </nav>
-
 <div class="container mt-4">
     <h2>Create a New Comment</h2>
 

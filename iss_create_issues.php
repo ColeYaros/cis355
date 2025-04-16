@@ -69,6 +69,9 @@ Database::disconnect();
                     <a class="nav-link" href="iss_create_issues.php">Create Issue</a>
                 </li>
                 <li class="nav-item">
+                    <a class="nav-link" href="iss_per_list.php">Persons</a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link" href="iss_per.php?id=<?php echo $_SESSION['iss_person_id']; ?>">Me</a>
                 </li>
             </ul>

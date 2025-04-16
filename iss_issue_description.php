@@ -77,6 +77,24 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["delete_id"]) && $is_ad
     }
 }
 
+// Handle comment deletion if the logged-in user owns it
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["delete_comment_id"])) {
+    $comment_id = $_POST["delete_comment_id"];
+    
+    // Ensure the user owns the comment before deleting
+    $stmt = $pdo->prepare("SELECT per_id FROM iss_comments WHERE id = ?");
+    $stmt->execute([$comment_id]);
+    $comment = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if ($comment && $comment['per_id'] == $_SESSION['iss_person_id']) {
+        $delete_stmt = $pdo->prepare("DELETE FROM iss_comments WHERE id = ?");
+        $delete_stmt->execute([$comment_id]);
+
+        // Optional: Redirect to prevent resubmission
+        header("Location: " . $_SERVER['REQUEST_URI']);
+        exit;
+    }
+}
 
     Database::disconnect();
 ?>
@@ -108,13 +126,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["delete_id"]) && $is_ad
                     <a class="nav-link" href="iss_create_issues.php">Create Issue</a>
                 </li>
                 <li class="nav-item">
+                    <a class="nav-link" href="iss_per_list.php">Persons</a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link" href="iss_per.php?id=<?php echo $_SESSION['iss_person_id']; ?>">Me</a>
                 </li>
             </ul>
         </div>
     </div>
 </nav>
-
 <div class="container mt-4">
     <h2>Issue Details</h2>
 
@@ -161,8 +181,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["delete_id"]) && $is_ad
         <p><small>Posted on: <?php echo htmlspecialchars($comment['posted_date']); ?></small></p>
         
         <?php if ($comment['per_id'] == $_SESSION['iss_person_id']): ?>
-            <a href="iss_update_comment.php?id=<?php echo $comment['comment_id']; ?>" class="btn btn-sm btn-secondary">Edit</a>
-        <?php endif; ?>
+    <a href="iss_update_comment.php?id=<?php echo $comment['comment_id']; ?>" class="btn btn-sm btn-secondary">Edit</a>
+
+    <form method="POST" style="display:inline;" onsubmit="return confirm('Delete this comment?');">
+        <input type="hidden" name="delete_comment_id" value="<?php echo $comment['comment_id']; ?>">
+        <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+    </form>
+<?php endif; ?>
+
     </li>
 <?php endforeach; ?>
 
